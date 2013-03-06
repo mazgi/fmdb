@@ -9,8 +9,24 @@
 void testPool(NSString *dbPath);
 void FMDBReportABugFunction();
 
-int main (int argc, const char * argv[]) {
-    
+int main_for_objc (int argc, const char * argv[]);
+int main_for_cpp (int argc, const char * argv[]);
+
+int main (int argc, const char * argv[])
+{
+    int result = 0;
+    if (result == 0) result = main_for_cpp(argc, argv);
+    if (result == 0) result = main_for_objc(argc, argv);
+    return result;
+}
+
+int main_for_cpp (int argc, const char * argv[])
+{
+    return -1;
+}
+
+int main_for_objc (int argc, const char * argv[])
+{
 @autoreleasepool {
     
     FMDBReportABugFunction();
