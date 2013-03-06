@@ -4,10 +4,14 @@
 #import "FMDatabasePool.h"
 #import "FMDatabaseQueue.h"
 
+#pragma mark - include c++ headers
+#include "HMDatabase.h"
+
 #define FMDBQuickCheck(SomeBool) { if (!(SomeBool)) { NSLog(@"Failure on line %d", __LINE__); abort(); } }
 
 void testPool(NSString *dbPath);
 void FMDBReportABugFunction();
+void HMDBReportABugFunction();
 
 int main_for_objc (int argc, const char * argv[]);
 int main_for_cpp (int argc, const char * argv[]);
@@ -22,6 +26,257 @@ int main (int argc, const char * argv[])
 
 int main_for_cpp (int argc, const char * argv[])
 {
+    HMDBReportABugFunction();
+
+    NSString *dbPath = @"/tmp/hm.db";
+
+    // delete the old db.
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    [fileManager removeItemAtPath:dbPath error:nil];
+
+    HMDatabase *db = HMDatabase::databaseWithPath([dbPath cStringUsingEncoding:NSUTF8StringEncoding]);
+
+    NSLog(@"Is SQLite compiled with it's thread safe options turned on? %@!", HMDatabase::isSQLiteThreadSafe() ? @"Yes" : @"No");
+
+    {
+        // -------------------------------------------------------------------------------
+        // Un-opened database check.
+        FMDBQuickCheck((db->executeQuery("select * from table")) == NULL);
+        NSLog(@"%d: %s", db->lastErrorCode(), db->lastErrorMessage());
+    }
+
+    if (!(db->open())) {
+        NSLog(@"Could not open db.");
+
+        return 1;
+    }
+
+    // kind of experimentalish.
+    db->setShouldCacheStatements(true);
+
+    // create a bad statement, just to test the error code.
+    db->executeUpdate("blah blah blah");
+
+    FMDBQuickCheck(db->hadError());
+
+    if (db->hadError()) {
+        NSLog(@"Err %d: %s", db->lastErrorCode(), db->lastErrorMessage());
+    }
+
+    HMError *err = 0x00;
+    FMDBQuickCheck(!(db->updateWithErrorAndBindgings("blah blah blah", &err)));
+    FMDBQuickCheck(err != NULL);
+//    FMDBQuickCheck(err->code == SQLITE_ERROR);
+    NSLog(@"err: '%s'", err);
+
+
+    
+    // empty strings should still return a value.
+    FMDBQuickCheck((db->boolForQuery((void *)"SELECT ? not null", "")));
+
+    // same with empty bits o' mutable data
+    FMDBQuickCheck((db->boolForQuery((void *)"SELECT ? not null", [NSMutableData data])));
+
+    // same with empty bits o' data
+    FMDBQuickCheck((db->boolForQuery((void *)@"SELECT ? not null", [NSData data])));
+
+    
+
+    // how do we do pragmas?  Like so:
+    HMResultSet *ps = db->executeQuery("PRAGMA journal_mode=delete");
+    FMDBQuickCheck(!db->hadError());
+    FMDBQuickCheck(ps);
+    FMDBQuickCheck(ps->next());
+    ps->close();
+
+    // oh, but some pragmas require updates?
+    db->executeUpdate("PRAGMA page_size=2048");
+    FMDBQuickCheck(!db->hadError());
+
+    // what about a vacuum?
+    db->executeUpdate("vacuum");
+    FMDBQuickCheck(!db->hadError());
+
+    // but of course, I don't bother checking the error codes below.
+    // Bad programmer, no cookie.
+
+    db->executeUpdate("create table test (a text, b text, c integer, d double, e double)");
+
+
+    db->beginTransaction();
+    int i = 0;
+    while (i++ < 20) {
+        db->executeUpdate("insert into test (a, b, c, d, e) values (?, ?, ?, ?, ?)" ,
+                          @"hi'", // look!  I put in a ', and I'm not escaping it!
+                          [NSString stringWithFormat:@"number %d", i],
+                          [NSNumber numberWithInt:i],
+                          [NSDate date],
+                          [NSNumber numberWithFloat:2.2f]
+                          );
+    }
+    db->commit();
+
+
+
+    
+
+    HMResultSet *rs = db->executeQuery("select rowid,* from test where a = ?", @"hi'");
+    while (rs->next()) {
+        // just print out what we've got in a number of formats.
+        NSLog(@"%d %@ %@ %@ %@ %f %f",
+              rs->intForColumn("c"),
+              rs->stringForColumn("b"),
+              rs->stringForColumn("a"),
+              rs->stringForColumn("rowid"),
+              rs->dateForColumn("d"),
+              rs->doubleForColumn("d"),
+              rs->doubleForColumn("e")
+              );
+
+        
+        if (!([[NSString stringWithCString:rs->columnNameForIndex(0) encoding:NSUTF8StringEncoding]isEqualToString:@"rowid"]
+              && [[NSString stringWithCString:rs->columnNameForIndex(1) encoding:NSUTF8StringEncoding]isEqualToString:@"a"])
+            ) {
+            NSLog(@"WHOA THERE BUDDY, columnNameForIndex ISN'T WORKING!");
+            return 7;
+        }
+    }
+    // close the result set.
+    // it'll also close when it's dealloc'd, but we're closing the database before
+    // the autorelease pool closes, so sqlite will complain about it.
+    rs->close();
+
+    FMDBQuickCheck(!db->hasOpenResultSets());
+
+
+    rs = db->executeQuery("select rowid, a, b, c from test");
+    while (rs->next()) {
+
+//        FMDBQuickCheck([[NSString stringWithCString:rs[0] encoding:NSUTF8StringEncoding]isEqualTo:[NSString stringWithCString:rs[@"rowid"] encoding:NSUTF8StringEncoding]]);
+//        FMDBQuickCheck([[NSString stringWithCString:rs[1] encoding:NSUTF8StringEncoding]isEqualTo:[NSString stringWithCString:rs[@"a"] encoding:NSUTF8StringEncoding]]);
+//        FMDBQuickCheck([[NSString stringWithCString:rs[2] encoding:NSUTF8StringEncoding]isEqualTo:[NSString stringWithCString:rs[@"b"] encoding:NSUTF8StringEncoding]]);
+//        FMDBQuickCheck([[NSString stringWithCString:rs[3] encoding:NSUTF8StringEncoding]isEqualTo:[NSString stringWithCString:rs[@"c"] encoding:NSUTF8StringEncoding]]);
+    }
+    rs->close();
+
+
+
+
+
+    db->executeUpdate("create table ull (a integer)");
+
+    db->executeUpdate("insert into ull (a) values (?)" , [NSNumber numberWithUnsignedLongLong:ULLONG_MAX]);
+
+    rs = db->executeQuery("select  a from ull");
+    while (rs->next()) {
+        unsigned long long a = rs->unsignedLongLongIntForColumnIndex(0);
+        unsigned long long b = rs->unsignedLongLongIntForColumn("a");
+
+        FMDBQuickCheck(a == ULLONG_MAX);
+        FMDBQuickCheck(b == ULLONG_MAX);
+    }
+
+
+    // check case sensitive result dictionary.
+    db->executeUpdate("create table cs (aRowName integer, bRowName text)");
+    FMDBQuickCheck(!db->hadError());
+    db->executeUpdate("insert into cs (aRowName, bRowName) values (?, ?)" , [NSNumber numberWithBool:1], @"hello");
+    FMDBQuickCheck(!db->hadError());
+
+    rs = db->executeQuery("select * from cs");
+    while (rs->next()) {
+        HMDictionary *d = rs->resultDictionary();
+
+        FMDBQuickCheck(d->objectForKey("aRowName"));
+        FMDBQuickCheck(!d->objectForKey("arowname"));
+        FMDBQuickCheck(d->objectForKey("bRowName"));
+        FMDBQuickCheck(!d->objectForKey("browname"));
+    }
+
+
+    // check funky table names + getTableSchema
+    db->executeUpdate("create table '234 fds' (foo text)");
+    FMDBQuickCheck(!db->hadError());
+    rs = db->getTableSchema("234 fds");
+    FMDBQuickCheck(rs->next());
+    rs->close();
+
+
+
+
+
+    {
+        // -------------------------------------------------------------------------------
+        // Named parameters count test.
+        FMDBQuickCheck(db->executeUpdate("create table namedparamcounttest (a text, b text, c integer, d double)"));
+        NSMutableDictionary *dictionaryArgs = [NSMutableDictionary dictionary];
+        [dictionaryArgs setObject:@"Text1" forKey:@"a"];
+        [dictionaryArgs setObject:@"Text2" forKey:@"b"];
+        [dictionaryArgs setObject:[NSNumber numberWithInt:1] forKey:@"c"];
+        [dictionaryArgs setObject:[NSNumber numberWithDouble:2.0] forKey:@"d"];
+        FMDBQuickCheck(db->executeUpdateWithParameterDictionary("insert into namedparamcounttest values (:a, :b, :c, :d)", dictionaryArgs));
+
+        rs = db->executeQuery("select * from namedparamcounttest");
+
+        FMDBQuickCheck((rs != NULL));
+
+        rs->next();
+
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("a") encoding:NSUTF8StringEncoding]isEqualToString:@"Text1"]);
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("b") encoding:NSUTF8StringEncoding]isEqualToString:@"Text2"]);
+        FMDBQuickCheck(rs->intForColumn("c") == 1);
+        FMDBQuickCheck(rs->doubleForColumn("d") == 2.0);
+
+        rs->close();
+
+        // note that at this point, dictionaryArgs has way more values than we need, but the query should still work since
+        // a is in there, and that's all we need.
+        rs = db->executeQueryWithParameterDictionary("select * from namedparamcounttest where a = :a", dictionaryArgs);
+
+        FMDBQuickCheck((rs != NULL));
+        FMDBQuickCheck(rs->next());
+        rs->close();
+
+
+        // ***** Please note the following codes *****
+
+        dictionaryArgs = [NSMutableDictionary dictionary];
+
+        [dictionaryArgs setObject:@"NewText1" forKey:@"a"];
+        [dictionaryArgs setObject:@"NewText2" forKey:@"b"];
+        [dictionaryArgs setObject:@"OneMoreText" forKey:@"OneMore"];
+
+        bool rc = db->executeUpdateWithParameterDictionary("update namedparamcounttest set a = :a, b = :b where b = 'Text2'", dictionaryArgs);
+
+        FMDBQuickCheck(rc);
+
+        if (!rc) {
+            NSLog(@"ERROR: %d - %s", db->lastErrorCode(), db->lastErrorMessage());
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+    // ----------------------------------------------------------------------------------------
+    // blob support.
+
+
+    //TODO: write code.
+
+
+
+
+    delete db;
+
     return -1;
 }
 
@@ -38,7 +293,7 @@ int main_for_objc (int argc, const char * argv[])
     [fileManager removeItemAtPath:dbPath error:nil];
     
     FMDatabase *db = [FMDatabase databaseWithPath:dbPath];
-    
+
     NSLog(@"Is SQLite compiled with it's thread safe options turned on? %@!", [FMDatabase isSQLiteThreadSafe] ? @"Yes" : @"No");
     
     {
@@ -54,7 +309,7 @@ int main_for_objc (int argc, const char * argv[])
         
         return 0;
     }
-    
+
     // kind of experimentalish.
     [db setShouldCacheStatements:YES];
     
@@ -66,7 +321,7 @@ int main_for_objc (int argc, const char * argv[])
     if ([db hadError]) {
         NSLog(@"Err %d: %@", [db lastErrorCode], [db lastErrorMessage]);
     }
-    
+
     NSError *err = 0x00;
     FMDBQuickCheck(![db update:@"blah blah blah" withErrorAndBindings:&err]);
     FMDBQuickCheck(err != nil);
@@ -1378,7 +1633,41 @@ void FMDBReportABugFunction() {
     
 }
 
+void HMDBReportABugFunction() {
+#warning Not implemented.
 
+//    NSString *dbPath = @"/tmp/bugreportsample.db";
+//
+//    // delete the old db if it exists
+//    NSFileManager *fileManager = [NSFileManager defaultManager];
+//    [fileManager removeItemAtPath:dbPath error:nil];
+//
+//    FMDatabaseQueue *queue = [FMDatabaseQueue databaseQueueWithPath:dbPath];
+//
+//    [queue inDatabase:^(FMDatabase *db) {
+//
+//        /*
+//         Change the contents of this block to suit your needs.
+//         */
+//
+//        BOOL worked = [db executeUpdate:@"create table test (a text, b text, c integer, d double, e double)"];
+//        FMDBQuickCheck(worked);
+//
+//
+//        worked = [db executeUpdate:@"insert into test values ('a', 'b', 1, 2.2, 2.3)"];
+//        FMDBQuickCheck(worked);
+//
+//        FMResultSet *rs = [db executeQuery:@"select * from test"];
+//        FMDBQuickCheck([rs next]);
+//        [rs close];
+//
+//    }];
+//
+//
+//    [queue close];
+//
+//
+//    // uncomment the following line if you don't want to run through all the other tests.
+//    //exit(0);
 
-
-
+}

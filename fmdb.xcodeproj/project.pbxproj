@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2628069A16E759B3004A459C /* HMResultSet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2628069816E759B3004A459C /* HMResultSet.cpp */; };
+		2628069B16E759B3004A459C /* HMResultSet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2628069816E759B3004A459C /* HMResultSet.cpp */; };
+		2628069C16E759B3004A459C /* HMResultSet.h in Headers */ = {isa = PBXBuildFile; fileRef = 2628069916E759B3004A459C /* HMResultSet.h */; };
 		2653DCDE16E5F8E30002EF6A /* HMDatabase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2653DCDC16E5F8E30002EF6A /* HMDatabase.cpp */; };
 		2653DCDF16E5F8E30002EF6A /* HMDatabase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2653DCDC16E5F8E30002EF6A /* HMDatabase.cpp */; };
 		2653DCE016E5F8E30002EF6A /* HMDatabase.h in Headers */ = {isa = PBXBuildFile; fileRef = 2653DCDD16E5F8E30002EF6A /* HMDatabase.h */; };
@@ -51,6 +54,8 @@
 
 /* Begin PBXFileReference section */
 		08FB779EFE84155DC02AAC07 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		2628069816E759B3004A459C /* HMResultSet.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HMResultSet.cpp; path = common/HMResultSet.cpp; sourceTree = "<group>"; };
+		2628069916E759B3004A459C /* HMResultSet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HMResultSet.h; path = common/HMResultSet.h; sourceTree = "<group>"; };
 		2653DCDC16E5F8E30002EF6A /* HMDatabase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HMDatabase.cpp; path = common/HMDatabase.cpp; sourceTree = "<group>"; };
 		2653DCDD16E5F8E30002EF6A /* HMDatabase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HMDatabase.h; path = common/HMDatabase.h; sourceTree = "<group>"; };
 		32A70AAB03705E1F00C91783 /* fmdb_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fmdb_Prefix.pch; sourceTree = "<group>"; };
@@ -152,8 +157,10 @@
 		264E28B716E5EC48009B8126 /* Source (C++) */ = {
 			isa = PBXGroup;
 			children = (
-				2653DCDC16E5F8E30002EF6A /* HMDatabase.cpp */,
 				2653DCDD16E5F8E30002EF6A /* HMDatabase.h */,
+				2653DCDC16E5F8E30002EF6A /* HMDatabase.cpp */,
+				2628069916E759B3004A459C /* HMResultSet.h */,
+				2628069816E759B3004A459C /* HMResultSet.cpp */,
 			);
 			name = "Source (C++)";
 			sourceTree = "<group>";
@@ -179,6 +186,7 @@
 				CC9E4EBA13B31188005F9210 /* FMDatabasePool.h in Headers */,
 				CC47A00F148581E9002CCDAB /* FMDatabaseQueue.h in Headers */,
 				2653DCE016E5F8E30002EF6A /* HMDatabase.h in Headers */,
+				2628069C16E759B3004A459C /* HMResultSet.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,6 +268,7 @@
 				CC9E4EB913B31188005F9210 /* FMDatabasePool.m in Sources */,
 				CC47A010148581E9002CCDAB /* FMDatabaseQueue.m in Sources */,
 				2653DCDE16E5F8E30002EF6A /* HMDatabase.cpp in Sources */,
+				2628069A16E759B3004A459C /* HMResultSet.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,6 +282,7 @@
 				CC9E4EBB13B31188005F9210 /* FMDatabasePool.m in Sources */,
 				CC47A011148581E9002CCDAB /* FMDatabaseQueue.m in Sources */,
 				2653DCDF16E5F8E30002EF6A /* HMDatabase.cpp in Sources */,
+				2628069B16E759B3004A459C /* HMResultSet.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
