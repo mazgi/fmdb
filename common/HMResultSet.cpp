@@ -155,3 +155,33 @@ HMDictionary *HMResultSet::resultDictionary()
 #warning Not implemented.
     return NULL;
 }
+
+bool HMResultSet::columnIndexIsNull(int columnIdx)
+{
+#warning Not implemented.
+    return false;
+}
+
+bool HMResultSet::columnIsNull(const char *columnName)
+{
+#warning Not implemented.
+    return false;
+}
+
+bool HMResultSet::hasAnotherRow()
+{
+#warning Not implemented.
+    return false;
+}
+
+const unsigned char *HMResultSet::UTF8StringForColumnIndex(int columnIdx)
+{
+#warning Not implemented.
+    return NULL;
+}
+
+const unsigned char *HMResultSet::UTF8StringForColumnName(const char *columnName)
+{
+#warning Not implemented.
+    return NULL;
+}

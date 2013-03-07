@@ -12,17 +12,65 @@
 #include <iostream>
 
 //TODO: create classes and impl.
-typedef void HMData; //TODO: STLあたりから型探してくる
-typedef void HMDate; //TODO: STLあたりから型探してくる
+typedef void HMStatement;
+
+class HMEnumerator
+{
+    //TODO: STLあたりから型探してくる
+public:
+    void *nextObject()
+    {
+#warning Not implemented.
+        return NULL;
+    }
+};
+
+class HMData
+{
+    //TODO: STLあたりから型探してくる
+public:
+    unsigned long length()
+    {
+        return 0ul;
+    }
+};
 
 class HMDictionary
 {
+    //TODO: STLあたりから型探してくる
 public:
     void *objectForKey(const char *aKey)
     {
 #warning Not implemented.
+        return NULL;
+    }
+    HMEnumerator *objectEnumerator()
+    {
+#warning Not implemented.
+        return NULL;
+    }
+};
+
+class HMDate
+{
+public:
+    static HMDate *date()
+    {
+#warning Not implemented.
         //TODO: STLあたりから型探してくる
         return NULL;
+    }
+    static HMDate *dateWithTimeIntervalSince1970(double secs)
+    {
+#warning Not implemented.
+        //TODO: STLあたりから型探してくる
+        return NULL;
+    }
+    double timeIntervalSinceDate(HMDate *anotherDate)
+    {
+#warning Not implemented.
+        //TODO: STLあたりから型探してくる
+        return 0.0;
     }
 };
 
@@ -54,6 +102,11 @@ public:
     char *operator[](int idx);
     char *operator[](const char *key);
     HMDictionary *resultDictionary();
+    bool columnIndexIsNull(int columnIdx);
+    bool columnIsNull(const char *columnName);
+    bool hasAnotherRow();
+    const unsigned char *UTF8StringForColumnIndex(int columnIdx);
+    const unsigned char *UTF8StringForColumnName(const char *columnName);
 };
 
 #endif /* defined(__fmdb__HMResultSet__) */

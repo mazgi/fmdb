@@ -119,7 +119,7 @@ HMResultSet *HMDatabase::getTableSchema(const char *tableName)
     return NULL;
 }
 
-bool HMDatabase::updateWithErrorAndBindgings(const char *sql, HMError **outErr, ...)
+bool HMDatabase::updateWithErrorAndBindings(const char *sql, HMError **outErr, ...)
 {
 #warning Not implemented.
     return false;
@@ -171,4 +171,59 @@ HMResultSet *HMDatabase::executeQueryWithParameterDictionary(const char *sql, ..
 {
 #warning Not implemented.
     return NULL;
+}
+
+int HMDatabase::changes()
+{
+#warning Not implemented.
+    return 0;
+}
+
+void HMDatabase::setBusyRetryTimeout(int value)
+{
+#warning Not implemented.
+    busyRetryTimeout_ = value;
+}
+
+int HMDatabase::getBusyRetryTimeout()
+{
+#warning Not implemented.
+    return busyRetryTimeout_;
+}
+
+bool HMDatabase::close()
+{
+#warning Not implemented.
+    return false;
+}
+
+bool HMDatabase::columnExistsInTableWithName(const char *columnName, const char *tableName)
+{
+#warning Not implemented.
+    return false;
+}
+
+bool HMDatabase::tableExists(const char *tableName)
+{
+#warning Not implemented.
+    return false;
+}
+
+HMResultSet *HMDatabase::getSchema()
+{
+    //result colums: type[STRING], name[STRING],tbl_name[STRING],rootpage[INTEGER],sql[STRING]
+    HMResultSet *rs = this->executeQuery("SELECT type, name, tbl_name, rootpage, sql FROM (SELECT * FROM sqlite_master UNION ALL SELECT * FROM sqlite_temp_master) WHERE type != 'meta' AND name NOT LIKE 'sqlite_%' ORDER BY tbl_name, type DESC, name");
+
+    return rs;
+}
+
+HMDictionary *HMDatabase::cachedStatements()
+{
+#warning Not implemented.
+    return NULL;
+}
+
+void HMDatabase::setCachedStatements(HMDictionary *value)
+{
+#warning Not implemented.
 }

@@ -4,8 +4,12 @@
 #import "FMDatabasePool.h"
 #import "FMDatabaseQueue.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-WNot implemented."
+
 #pragma mark - include c++ headers
 #include "HMDatabase.h"
+#include "HMDatabaseQueue.h"
 
 #define FMDBQuickCheck(SomeBool) { if (!(SomeBool)) { NSLog(@"Failure on line %d", __LINE__); abort(); } }
 
@@ -64,7 +68,7 @@ int main_for_cpp (int argc, const char * argv[])
     }
 
     HMError *err = 0x00;
-    FMDBQuickCheck(!(db->updateWithErrorAndBindgings("blah blah blah", &err)));
+    FMDBQuickCheck(!(db->updateWithErrorAndBindings("blah blah blah", &err)));
     FMDBQuickCheck(err != NULL);
 //    FMDBQuickCheck(err->code == SQLITE_ERROR);
     NSLog(@"err: '%s'", err);
@@ -268,6 +272,579 @@ int main_for_cpp (int argc, const char * argv[])
 
     // ----------------------------------------------------------------------------------------
     // blob support.
+    db->executeUpdate("create table blobTable (a text, b blob)");
+
+    // let's read in an image from safari's app bundle.
+    NSData *safariCompass = [NSData dataWithContentsOfFile:@"/Applications/Safari.app/Contents/Resources/compass.icns"];
+    if (safariCompass) {
+        db->executeUpdate("insert into blobTable (a, b) values (?,?)", @"safari's compass", safariCompass);
+
+        rs = db->executeQuery("select b from blobTable where a = ?", "safari's compass");
+        if (rs->next()) {
+//            safariCompass = rs->dataForColumn("b");
+            [safariCompass writeToFile:@"/tmp/compass.icns" atomically:NO];
+
+            // let's look at our fancy image that we just wrote out..
+            system("/usr/bin/open /tmp/compass.icns");
+
+            // ye shall read the header for this function, or suffer the consequences.
+//            safariCompass = rs->dataNoCopyForColumn("b");
+            [safariCompass writeToFile:@"/tmp/compass_data_no_copy.icns" atomically:NO];
+            system("/usr/bin/open /tmp/compass_data_no_copy.icns");
+        }
+        else {
+            NSLog(@"Could not select image.");
+        }
+
+        rs->close();
+
+    }
+    else {
+        NSLog(@"Can't find compass image..");
+    }
+
+
+    // test out the convenience methods in +Additions
+    db->executeUpdate("create table t1 (a integer)");
+    db->executeUpdate("insert into t1 values (?)", [NSNumber numberWithInt:5]);
+
+    NSLog(@"Count of changes (should be 1): %d", db->changes());
+    FMDBQuickCheck(db->changes() == 1);
+
+    int ia = db->intForQuery((void *)"select a from t1 where a = ?", [NSNumber numberWithInt:5]);
+    if (ia != 5) {
+        NSLog(@"intForQuery didn't work (a != 5)");
+    }
+
+    // test the busy rety timeout schtuff.
+
+    db->setBusyRetryTimeout(500);
+
+    HMDatabase *newDb = HMDatabase::databaseWithPath([dbPath cStringUsingEncoding:NSUTF8StringEncoding]);
+    newDb->open();
+
+    rs = newDb->executeQuery("select rowid,* from test where a = ?", "hi'");
+    rs->next(); // just grab one... which will keep the db locked.
+
+    NSLog(@"Testing the busy timeout");
+
+    bool success = db->executeUpdate("insert into t1 values (5)");
+
+    if (success) {
+        NSLog(@"Whoa- the database didn't stay locked!");
+        return 7;
+    }
+    else {
+        NSLog(@"Hurray, our timeout worked");
+    }
+
+    rs->close();
+    newDb->close();
+
+    success = db->executeUpdate("insert into t1 values (5)");
+    if (!success) {
+        NSLog(@"Whoa- the database shouldn't be locked!");
+        return 8;
+    }
+    else {
+        NSLog(@"Hurray, we can insert again!");
+    }
+
+
+
+    // test some nullness.
+    db->executeUpdate("create table t2 (a integer, b integer)");
+
+    if (!db->executeUpdate("insert into t2 values (?, ?)", NULL, [NSNumber numberWithInt:5])) {
+        NSLog(@"UH OH, can't insert a nil value for some reason...");
+    }
+
+
+
+
+    rs = db->executeQuery("select * from t2");
+    while (rs->next()) {
+        char *aa = rs->stringForColumnIndex(0);
+        char *b = rs->stringForColumnIndex(1);
+
+        if (aa != NULL) {
+            NSLog(@"%s:%d", __FUNCTION__, __LINE__);
+            NSLog(@"OH OH, PROBLEMO!");
+            return 10;
+        }
+        else {
+            NSLog(@"YAY, NULL VALUES");
+        }
+
+        if (![[NSString stringWithCString:b encoding:NSUTF8StringEncoding]isEqualToString:@"5"]) {
+            NSLog(@"%s:%d", __FUNCTION__, __LINE__);
+            NSLog(@"OH OH, PROBLEMO!");
+            return 10;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    // test some inner loop funkness.
+    db->executeUpdate("create table t3 (a somevalue)");
+
+
+    // do it again, just because
+    db->beginTransaction();
+    i = 0;
+    while (i++ < 20) {
+        db->executeUpdate("insert into t3 (a) values (?)" , [NSNumber numberWithInt:i]);
+    }
+    db->commit();
+
+
+
+
+    rs = db->executeQuery("select * from t3");
+    while (rs->next()) {
+        int foo = rs->intForColumnIndex(0);
+
+        int newVal = foo + 100;
+
+        db->executeUpdate("update t3 set a = ? where a = ?" , [NSNumber numberWithInt:newVal], [NSNumber numberWithInt:foo]);
+
+
+        HMResultSet *rs2 = db->executeQuery("select a from t3 where a = ?", [NSNumber numberWithInt:newVal]);
+        rs2->next();
+
+        if (rs2->intForColumnIndex(0) != newVal) {
+            NSLog(@"Oh crap, our update didn't work out!");
+            return 9;
+        }
+
+        rs2->close();
+    }
+
+
+    // NSNull tests
+    db->executeUpdate("create table nulltest (a text, b text)");
+
+    db->executeUpdate("insert into nulltest (a, b) values (?, ?)" , [NSNull null], @"a");
+    db->executeUpdate("insert into nulltest (a, b) values (?, ?)" , nil, @"b");
+
+    rs = db->executeQuery("select * from nulltest");
+
+    while (rs->next()) {
+
+        char *a = rs->stringForColumnIndex(0);
+        char *b = rs->stringForColumnIndex(1);
+
+        if (!b) {
+            NSLog(@"Oh crap, the nil / null inserts didn't work!");
+            return 10;
+        }
+
+        if (a) {
+            NSLog(@"Oh crap, the nil / null inserts didn't work (son of error message)!");
+            return 11;
+        }
+        else {
+            NSLog(@"HURRAH FOR NSNULL (and nil)!");
+        }
+    }
+
+
+    FMDBQuickCheck(db->columnExistsInTableWithName("a", "nulltest"));
+    FMDBQuickCheck(db->columnExistsInTableWithName("b", "nulltest"));
+    FMDBQuickCheck(!db->columnExistsInTableWithName("c", "nulltest"));
+
+
+    // null dates
+
+    HMDate *date = HMDate::date();
+    db->executeUpdate("create table datetest (a double, b double, c double)");
+    db->executeUpdate("insert into datetest (a, b, c) values (?, ?, 0)" , [NSNull null], date);
+
+    rs = db->executeQuery("select * from datetest");
+
+    while (rs->next()) {
+
+        HMDate *a = rs->dateForColumnIndex(0);
+        HMDate *b = rs->dateForColumnIndex(1);
+        HMDate *c = rs->dateForColumnIndex(2);
+
+        if (a) {
+            NSLog(@"Oh crap, the null date insert didn't work!");
+            return 12;
+        }
+
+        if (!c) {
+            NSLog(@"Oh crap, the 0 date insert didn't work!");
+            return 12;
+        }
+
+        NSTimeInterval dti = fabs(b->timeIntervalSinceDate(date));
+
+        if (floor(dti) > 0.0) {
+            NSLog(@"Date matches didn't really happen... time difference of %f", dti);
+            return 13;
+        }
+
+
+        dti = fabs(c->timeIntervalSinceDate(HMDate::dateWithTimeIntervalSince1970(0)));
+
+        if (floor(dti) > 0.0) {
+            NSLog(@"Date matches didn't really happen... time difference of %f", dti);
+            return 13;
+        }
+    }
+
+    HMDate *foo = db->dateForQuery((void *)"select b from datetest where c = 0");
+    assert(foo);
+    NSTimeInterval dti = fabs(foo->timeIntervalSinceDate(date));
+    if (floor(dti) > 0.0) {
+        NSLog(@"Date matches didn't really happen... time difference of %f", dti);
+        return 14;
+    }
+
+    db->executeUpdate("create table nulltest2 (s text, d data, i integer, f double, b integer)");
+
+    db->executeUpdate("insert into nulltest2 (s, d, i, f, b) values (?, ?, ?, ?, ?)" , @"Hi", safariCompass, [NSNumber numberWithInt:12], [NSNumber numberWithFloat:4.4f], [NSNumber numberWithBool:YES]);
+    db->executeUpdate("insert into nulltest2 (s, d, i, f, b) values (?, ?, ?, ?, ?)" , nil, nil, nil, nil, [NSNull null]);
+
+    rs = db->executeQuery("select * from nulltest2");
+
+    while (rs->next()) {
+
+        i = rs->intForColumnIndex(2);
+
+        if (i == 12) {
+            // it's the first row we inserted.
+            FMDBQuickCheck(!rs->columnIndexIsNull(0));
+            FMDBQuickCheck(!rs->columnIndexIsNull(1));
+            FMDBQuickCheck(!rs->columnIndexIsNull(2));
+            FMDBQuickCheck(!rs->columnIndexIsNull(3));
+            FMDBQuickCheck(!rs->columnIndexIsNull(4));
+            FMDBQuickCheck( rs->columnIndexIsNull(5));
+
+            FMDBQuickCheck(rs->dataForColumn("d")->length() == [safariCompass length]);
+            FMDBQuickCheck(!rs->dataForColumn("notthere"));
+            FMDBQuickCheck(!rs->stringForColumnIndex(-2));
+            FMDBQuickCheck(rs->boolForColumnIndex(4));
+            FMDBQuickCheck(rs->boolForColumn("b"));
+
+            FMDBQuickCheck(fabs(4.4 - rs->doubleForColumn("f")) < 0.0000001);
+
+            FMDBQuickCheck(12 == rs->intForColumn("i"));
+            FMDBQuickCheck(12 == rs->intForColumnIndex(2));
+
+            FMDBQuickCheck(0 == rs->intForColumnIndex(12)); // there is no 12
+            FMDBQuickCheck(0 == rs->intForColumn("notthere"));
+
+            FMDBQuickCheck(12 == rs->longForColumn("i"));
+            FMDBQuickCheck(12 == rs->longLongIntForColumn("i"));
+        }
+        else {
+            // let's test various null things.
+
+            FMDBQuickCheck(rs->columnIndexIsNull(0));
+            FMDBQuickCheck(rs->columnIndexIsNull(1));
+            FMDBQuickCheck(rs->columnIndexIsNull(2));
+            FMDBQuickCheck(rs->columnIndexIsNull(3));
+            FMDBQuickCheck(rs->columnIndexIsNull(4));
+            FMDBQuickCheck(rs->columnIndexIsNull(5));
+
+
+            FMDBQuickCheck(!rs->dataForColumn("d"));
+
+        }
+    }
+
+
+
+    {
+
+        db->executeUpdate("create table utest (a text)");
+        db->executeUpdate("insert into utest values (?)", "/übertest");
+
+        rs = db->executeQuery("select * from utest where a = ?", "/übertest");
+        FMDBQuickCheck(rs->next());
+        rs->close();
+    }
+
+
+    {
+        db->executeUpdate("create table testOneHundredTwelvePointTwo (a text, b integer)");
+        db->executeUpdateWithArgumentsInArray("insert into testOneHundredTwelvePointTwo values (?, ?)", [NSArray arrayWithObjects:@"one", [NSNumber numberWithInteger:2], nil]);
+        db->executeUpdateWithArgumentsInArray("insert into testOneHundredTwelvePointTwo values (?, ?)", [NSArray arrayWithObjects:@"one", [NSNumber numberWithInteger:3], nil]);
+
+
+        rs = db->executeQueryWithArgumentsInArray("select * from testOneHundredTwelvePointTwo where b > ?", [NSArray arrayWithObject:[NSNumber numberWithInteger:1]]);
+
+        FMDBQuickCheck(rs->next());
+
+        FMDBQuickCheck(rs->hasAnotherRow());
+        FMDBQuickCheck(!db->hadError());
+
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumnIndex(0) encoding:NSUTF8StringEncoding]isEqualToString:@"one"]);
+        FMDBQuickCheck(rs->intForColumnIndex(1) == 2);
+
+        FMDBQuickCheck(rs->next());
+
+        FMDBQuickCheck(rs->intForColumnIndex(1) == 3);
+
+        FMDBQuickCheck(!rs->next());
+        FMDBQuickCheck(!rs->hasAnotherRow());
+
+    }
+
+    {
+
+        FMDBQuickCheck(db->executeUpdate("create table t4 (a text, b text)"));
+        FMDBQuickCheck((db->executeUpdate("insert into t4 (a, b) values (?, ?)", @"one", @"two")));
+
+        rs = db->executeQuery("select t4.a as 't4.a', t4.b from t4;");
+
+        FMDBQuickCheck((rs != NULL));
+
+        rs->next();
+
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("t4.a") encoding:NSUTF8StringEncoding]isEqualToString:@"one"]);
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("b") encoding:NSUTF8StringEncoding]isEqualToString:@"two"]);
+
+        FMDBQuickCheck(strcmp((const char*)(rs->UTF8StringForColumnName("b")), "two") == 0);
+
+        rs->close();
+
+        // let's try these again, with the withArgumentsInArray: variation
+        FMDBQuickCheck(db->executeUpdateWithArgumentsInArray("drop table t4;", [NSArray array]));
+        FMDBQuickCheck(db->executeUpdateWithArgumentsInArray("create table t4 (a text, b text)", [NSArray array]));
+        FMDBQuickCheck((db->executeUpdateWithArgumentsInArray("insert into t4 (a, b) values (?, ?)", [NSArray arrayWithObjects:@"one", @"two", nil])));
+
+        rs = db->executeQueryWithArgumentsInArray("select t4.a as 't4.a', t4.b from t4;", [NSArray array]);
+
+        FMDBQuickCheck((rs != NULL));
+
+        rs->next();
+
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("t4.a") encoding:NSUTF8StringEncoding]isEqualToString:@"one"]);
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("b") encoding:NSUTF8StringEncoding]isEqualToString:@"two"]);
+
+        FMDBQuickCheck(strcmp((const char*)rs->UTF8StringForColumnName("b"), "two") == 0);
+
+        rs->close();
+    }
+
+
+
+
+    {
+        FMDBQuickCheck(db->tableExists("t4"));
+        FMDBQuickCheck(!db->tableExists("thisdoesntexist"));
+
+        rs = db->getSchema();
+        while (rs->next()) {
+            FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("type") encoding:NSUTF8StringEncoding]isEqualToString:@"table"]);
+        }
+    }
+
+
+    {
+        FMDBQuickCheck(db->executeUpdate("create table t5 (a text, b int, c blob, d text, e text)"));
+        FMDBQuickCheck((db->executeUpdateWithFormat("insert into t5 values (%s, %d, %@, %c, %lld)", "text", 42, @"BLOB", 'd', 12345678901234)));
+
+        rs = db->executeQueryWithFormat("select * from t5 where a = %s and a = %@ and b = %d", "text", @"text", 42);
+        FMDBQuickCheck((rs != NULL));
+
+        rs->next();
+
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("a") encoding:NSUTF8StringEncoding]isEqualToString:@"text"]);
+        FMDBQuickCheck((rs->intForColumn("b") == 42));
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("c") encoding:NSUTF8StringEncoding]isEqualToString:@"BLOB"]);
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("d") encoding:NSUTF8StringEncoding]isEqualToString:@"d"]);
+        FMDBQuickCheck((rs->longLongIntForColumn("e") == 12345678901234));
+
+        rs->close();
+    }
+
+
+
+    {
+        FMDBQuickCheck(db->executeUpdate("create table t55 (a text, b int, c float)"));
+        short testShort = -4;
+        float testFloat = 5.5;
+        FMDBQuickCheck((db->executeUpdateWithFormat("insert into t55 values (%c, %hi, %g)", 'a', testShort, testFloat)));
+
+        unsigned short testUShort = 6;
+        FMDBQuickCheck((db->executeUpdateWithFormat("insert into t55 values (%c, %hu, %g)", 'a', testUShort, testFloat)));
+
+
+        rs = db->executeQueryWithFormat("select * from t55 where a = %s order by 2", "a");
+        FMDBQuickCheck((rs != NULL));
+
+        rs->next();
+
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("a") encoding:NSUTF8StringEncoding]isEqualToString:@"a"]);
+        FMDBQuickCheck((rs->intForColumn("b") == -4));
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("c") encoding:NSUTF8StringEncoding]isEqualToString:@"5.5"]);
+
+
+        rs->next();
+
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("a") encoding:NSUTF8StringEncoding]isEqualToString:@"a"]);
+        FMDBQuickCheck((rs->intForColumn("b") == 6));
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("c") encoding:NSUTF8StringEncoding]isEqualToString:@"5.5"]);
+
+        rs->close();
+
+    }
+
+
+
+
+    {
+        FMDBQuickCheck((db->updateWithErrorAndBindings("insert into t5 values (?, ?, ?, ?, ?)", &err, @"text", [NSNumber numberWithInt:42], @"BLOB", @"d", [NSNumber numberWithInt:0])));
+
+    }
+
+
+    // test attach for the heck of it.
+    {
+
+        //FMDatabase *dbA = [FMDatabase databaseWithPath:dbPath];
+        [fileManager removeItemAtPath:@"/tmp/attachme.db" error:nil];
+        HMDatabase *dbB = HMDatabase::databaseWithPath("/tmp/attachme.db");
+        FMDBQuickCheck(dbB->open());
+        FMDBQuickCheck(dbB->executeUpdate("create table attached (a text)"));
+        FMDBQuickCheck((dbB->executeUpdate("insert into attached values (?)", @"test")));
+        FMDBQuickCheck(dbB->close());
+
+        db->executeUpdate("attach database '/tmp/attachme.db' as attack");
+
+        rs = db->executeQuery("select * from attack.attached");
+        FMDBQuickCheck(rs->next());
+        rs->close();
+
+    }
+
+
+
+    {
+        // -------------------------------------------------------------------------------
+        // Named parameters.
+        FMDBQuickCheck(db->executeUpdate("create table namedparamtest (a text, b text, c integer, d double)"));
+        NSMutableDictionary *dictionaryArgs = [NSMutableDictionary dictionary];
+        [dictionaryArgs setObject:@"Text1" forKey:@"a"];
+        [dictionaryArgs setObject:@"Text2" forKey:@"b"];
+        [dictionaryArgs setObject:[NSNumber numberWithInt:1] forKey:@"c"];
+        [dictionaryArgs setObject:[NSNumber numberWithDouble:2.0] forKey:@"d"];
+        FMDBQuickCheck(db->executeUpdateWithParameterDictionary("insert into namedparamtest values (:a, :b, :c, :d)", dictionaryArgs));
+
+        rs = db->executeQuery("select * from namedparamtest");
+
+        FMDBQuickCheck((rs != NULL));
+
+        rs->next();
+
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("a") encoding:NSUTF8StringEncoding]isEqualToString:@"Text1"]);
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("b") encoding:NSUTF8StringEncoding]isEqualToString:@"Text2"]);
+        FMDBQuickCheck(rs->intForColumn("c") == 1);
+        FMDBQuickCheck(rs->doubleForColumn("d") == 2.0);
+
+        rs->close();
+
+
+        dictionaryArgs = [NSMutableDictionary dictionary];
+
+        [dictionaryArgs setObject:@"Text2" forKey:@"blah"];
+
+        rs = db->executeQueryWithParameterDictionary("select * from namedparamtest where b = :blah", dictionaryArgs);
+
+        FMDBQuickCheck((rs != NULL));
+        FMDBQuickCheck(rs->next());
+        FMDBQuickCheck([[NSString stringWithCString:rs->stringForColumn("b") encoding:NSUTF8StringEncoding]isEqualToString:@"Text2"]);
+
+        rs->close();
+
+
+
+
+    }
+
+    // just for fun.
+    rs = db->executeQuery("PRAGMA database_list");
+    while (rs->next()) {
+        char *file = rs->stringForColumn("file");
+        NSLog(@"database_list: %s", file);
+    }
+
+
+    // print out some stats if we are using cached statements.
+    if (db->shouldCacheStatements()) {
+
+        HMEnumerator *e = db->cachedStatements()->objectEnumerator();
+        HMStatement *statement;
+
+        while ((statement = e->nextObject())) {
+            NSLog(@"%@", statement);
+        }
+    }
+
+
+    db->setShouldCacheStatements(true);
+
+    db->executeUpdate("CREATE TABLE testCacheStatements(key INTEGER PRIMARY KEY, value INTEGER)");
+    db->executeUpdate("INSERT INTO testCacheStatements (key, value) VALUES (1, 2)");
+    db->executeUpdate("INSERT INTO testCacheStatements (key, value) VALUES (2, 4)");
+
+    FMDBQuickCheck(db->executeQuery("SELECT * FROM testCacheStatements WHERE key=1")->next());
+    FMDBQuickCheck(db->executeQuery("SELECT * FROM testCacheStatements WHERE key=1")->next());
+
+    db->close();
+
+
+    testPool(dbPath);
+
+
+
+    HMDatabaseQueue *queue = HMDatabaseQueue::databaseQueueWithPath([dbPath cStringUsingEncoding:NSUTF8StringEncoding]);
+
+    FMDBQuickCheck(queue);
+
+    {
+//        [queue inDatabase:^(FMDatabase *adb) {
+//
+//
+//
+//            [adb executeUpdate:@"create table qfoo (foo text)"];
+//            [adb executeUpdate:@"insert into qfoo values ('hi')"];
+//            [adb executeUpdate:@"insert into qfoo values ('hello')"];
+//            [adb executeUpdate:@"insert into qfoo values ('not')"];
+//
+//
+//
+//            int count = 0;
+//            FMResultSet *rsl = [adb executeQuery:@"select * from qfoo where foo like 'h%'"];
+//            while ([rsl next]) {
+//                count++;
+//            }
+//
+//            FMDBQuickCheck(count == 2);
+//
+//            count = 0;
+//            rsl = [adb executeQuery:@"select * from qfoo where foo like ?", @"h%"];
+//            while ([rsl next]) {
+//                count++;
+//            }
+//
+//            FMDBQuickCheck(count == 2);
+//        }];
+
+    }
+
+
 
 
     //TODO: write code.

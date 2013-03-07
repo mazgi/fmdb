@@ -19,6 +19,8 @@ typedef void HMError; //TODO: STLあたりから型探してくる
 class HMDatabase
 {
     sqlite3 *db_;
+    int busyRetryTimeout_;
+    bool shouldCacheStatements_;
 public:
     static HMDatabase *databaseWithPath(const char *path);
     static bool isSQLiteThreadSafe();
@@ -39,7 +41,7 @@ public:
     bool beginTransaction();
     bool hasOpenResultSets();
     HMResultSet *getTableSchema(const char *tableName);
-    bool updateWithErrorAndBindgings(const char *sql, HMError **outErr, ...);
+    bool updateWithErrorAndBindings(const char *sql, HMError **outErr, ...);
     bool executeUpdate(const char *sql, ...);
     bool executeUpdateWithFormat(const char *format, ...);
     bool executeUpdateWithArgumentsInArray(const char *sql, ...);
@@ -48,6 +50,19 @@ public:
     HMResultSet *executeQueryWithFormat(const char *format, ...);
     HMResultSet *executeQueryWithArgumentsInArray(const char *sql, ...);
     HMResultSet *executeQueryWithParameterDictionary(const char *sql, ...);
+    int changes();
+    void setBusyRetryTimeout(int value);
+    int getBusyRetryTimeout();
+    bool close();
+    bool columnExistsInTableWithName(const char *columnName, const char *tableName);
+    bool tableExists(const char *tableName);
+    HMResultSet *getSchema();
+    bool shouldCacheStatements()
+    {
+        return shouldCacheStatements_;
+    }
+    HMDictionary *cachedStatements();
+    void setCachedStatements(HMDictionary *value);
 };
 
 #endif /* defined(__fmdb__HMDatabase__) */
