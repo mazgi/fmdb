@@ -63,6 +63,10 @@ public:
     }
     HMDictionary *cachedStatements();
     void setCachedStatements(HMDictionary *value);
+    static const char *sqliteLibVersion()
+    {
+        return sqlite3_libversion();
+    }
 };
 
 #endif /* defined(__fmdb__HMDatabase__) */

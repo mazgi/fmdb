@@ -127,7 +127,7 @@ int main_for_cpp (int argc, const char * argv[])
     HMResultSet *rs = db->executeQuery("select rowid,* from test where a = ?", @"hi'");
     while (rs->next()) {
         // just print out what we've got in a number of formats.
-        NSLog(@"%d %@ %@ %@ %@ %f %f",
+        NSLog(@"%d %s %s %s %@ %f %f",
               rs->intForColumn("c"),
               rs->stringForColumn("b"),
               rs->stringForColumn("a"),
@@ -845,12 +845,167 @@ int main_for_cpp (int argc, const char * argv[])
     }
 
 
+    {
+//        // You should see pairs of numbers show up in stdout for this stuff:
+//        size_t ops = 16;
+//
+//        dispatch_queue_t dqueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+//
+//        dispatch_apply(ops, dqueue, ^(size_t nby) {
+//
+//            // just mix things up a bit for demonstration purposes.
+//            if (nby % 2 == 1) {
+//                [NSThread sleepForTimeInterval:.1];
+//
+//                [queue inTransaction:^(FMDatabase *adb, BOOL *rollback) {
+//                    NSLog(@"Starting query  %ld", nby);
+//
+//                    FMResultSet *rsl = [adb executeQuery:@"select * from qfoo where foo like 'h%'"];
+//                    while ([rsl next]) {
+//                        ;// whatever.
+//                    }
+//
+//                    NSLog(@"Ending query    %ld", nby);
+//                }];
+//
+//            }
+//
+//            if (nby % 3 == 1) {
+//                [NSThread sleepForTimeInterval:.1];
+//            }
+//
+//            [queue inTransaction:^(FMDatabase *adb, BOOL *rollback) {
+//                NSLog(@"Starting update %ld", nby);
+//                [adb executeUpdate:@"insert into qfoo values ('1')"];
+//                [adb executeUpdate:@"insert into qfoo values ('2')"];
+//                [adb executeUpdate:@"insert into qfoo values ('3')"];
+//                NSLog(@"Ending update   %ld", nby);
+//            }];
+//        });
+//
+//        [queue close];
+//
+//        [queue inDatabase:^(FMDatabase *adb) {
+//            FMDBQuickCheck([adb executeUpdate:@"insert into qfoo values ('1')"]);
+//        }];
+    }
+
+    {
 
 
-    //TODO: write code.
+//        [queue inDatabase:^(FMDatabase *adb) {
+//            [adb executeUpdate:@"create table colNameTest (a, b, c, d)"];
+//            FMDBQuickCheck([adb executeUpdate:@"insert into colNameTest values (1, 2, 3, 4)"]);
+//
+//            FMResultSet *ars = [adb executeQuery:@"select * from colNameTest"];
+//
+//            NSDictionary *d = [ars columnNameToIndexMap];
+//            FMDBQuickCheck([d count] == 4);
+//
+//            FMDBQuickCheck([[d objectForKey:@"a"] intValue] == 0);
+//            FMDBQuickCheck([[d objectForKey:@"b"] intValue] == 1);
+//            FMDBQuickCheck([[d objectForKey:@"c"] intValue] == 2);
+//            FMDBQuickCheck([[d objectForKey:@"d"] intValue] == 3);
+//
+//            [ars close];
+//
+//        }];
+
+    }
 
 
+    {
+//        [queue inDatabase:^(FMDatabase *adb) {
+//            [adb executeUpdate:@"create table transtest (a integer)"];
+//            FMDBQuickCheck([adb executeUpdate:@"insert into transtest values (1)"]);
+//            FMDBQuickCheck([adb executeUpdate:@"insert into transtest values (2)"]);
+//
+//            int rowCount = 0;
+//            FMResultSet *ars = [adb executeQuery:@"select * from transtest"];
+//            while ([ars next]) {
+//                rowCount++;
+//            }
+//
+//            FMDBQuickCheck(rowCount == 2);
+//        }];
+//
+//
+//
+//        [queue inTransaction:^(FMDatabase *adb, BOOL *rollback) {
+//            FMDBQuickCheck([adb executeUpdate:@"insert into transtest values (3)"]);
+//
+//            if (YES) {
+//                // uh oh!, something went wrong (not really, this is just a test
+//                *rollback = YES;
+//                return;
+//            }
+//
+//            FMDBQuickCheck([adb executeUpdate:@"insert into transtest values (4)"]);
+//        }];
+//
+//        [queue inDatabase:^(FMDatabase *adb) {
+//
+//            int rowCount = 0;
+//            FMResultSet *ars = [adb executeQuery:@"select * from transtest"];
+//            while ([ars next]) {
+//                rowCount++;
+//            }
+//
+//            FMDBQuickCheck(![adb hasOpenResultSets]);
+//
+//            NSLog(@"after rollback, rowCount is %d (should be 2)", rowCount);
+//
+//            FMDBQuickCheck(rowCount == 2);
+//        }];
+    }
 
+    // hey, let's make a custom function!
+
+//    [queue inDatabase:^(FMDatabase *adb) {
+//
+//        [adb executeUpdate:@"create table ftest (foo text)"];
+//        [adb executeUpdate:@"insert into ftest values ('hello')"];
+//        [adb executeUpdate:@"insert into ftest values ('hi')"];
+//        [adb executeUpdate:@"insert into ftest values ('not h!')"];
+//        [adb executeUpdate:@"insert into ftest values ('definitely not h!')"];
+//
+//        [adb makeFunctionNamed:@"StringStartsWithH" maximumArguments:1 withBlock:^(sqlite3_context *context, int aargc, sqlite3_value **aargv) {
+//            if (sqlite3_value_type(aargv[0]) == SQLITE_TEXT) {
+//
+//                @autoreleasepool {
+//
+//                    const char *c = (const char *)sqlite3_value_text(aargv[0]);
+//
+//                    NSString *s = [NSString stringWithUTF8String:c];
+//
+//                    sqlite3_result_int(context, [s hasPrefix:@"h"]);
+//                }
+//            }
+//            else {
+//                NSLog(@"Unknown formart for StringStartsWithH (%d) %s:%d", sqlite3_value_type(aargv[0]), __FUNCTION__, __LINE__);
+//                sqlite3_result_null(context);
+//            }
+//        }];
+//
+//        int rowCount = 0;
+//        FMResultSet *ars = [adb executeQuery:@"select * from ftest where StringStartsWithH(foo)"];
+//        while ([ars next]) {
+//            rowCount++;
+//
+//            NSLog(@"Does %@ start with 'h'?", [rs stringForColumnIndex:0]);
+//
+//        }
+//        FMDBQuickCheck(rowCount == 2);
+//
+//
+//
+//
+//
+//
+//    }];
+
+
+    NSLog(@"That was version %s of sqlite", HMDatabase::sqliteLibVersion());
 
     delete db;
 
