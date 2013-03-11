@@ -3,5 +3,10 @@
 //
 
 #ifdef __OBJC__
-    #import <Foundation/Foundation.h>
+#import <Foundation/Foundation.h>
+#ifdef HMLog
+#undef HMLog
+#endif
+#define __BASENAME__ (strrchr(__FILE__, '/') + 1)
+#define HMLog(fmt, ...) NSLog(@"[%s:%05d](%s) " fmt, __BASENAME__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__)
 #endif

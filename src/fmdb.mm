@@ -38,7 +38,7 @@ int main_for_cpp (int argc, const char * argv[])
     NSFileManager *fileManager = [NSFileManager defaultManager];
     [fileManager removeItemAtPath:dbPath error:nil];
 
-    HMDatabase *db = HMDatabase::databaseWithPath([dbPath cStringUsingEncoding:NSUTF8StringEncoding]);
+    HMDatabase *db = new HMDatabase([dbPath cStringUsingEncoding:NSUTF8StringEncoding]);
 
     NSLog(@"Is SQLite compiled with it's thread safe options turned on? %@!", HMDatabase::isSQLiteThreadSafe() ? @"Yes" : @"No");
 
@@ -320,7 +320,7 @@ int main_for_cpp (int argc, const char * argv[])
 
     db->setBusyRetryTimeout(500);
 
-    HMDatabase *newDb = HMDatabase::databaseWithPath([dbPath cStringUsingEncoding:NSUTF8StringEncoding]);
+    HMDatabase *newDb = new HMDatabase([dbPath cStringUsingEncoding:NSUTF8StringEncoding]);
     newDb->open();
 
     rs = newDb->executeQuery("select rowid,* from test where a = ?", "hi'");
@@ -715,7 +715,7 @@ int main_for_cpp (int argc, const char * argv[])
 
         //FMDatabase *dbA = [FMDatabase databaseWithPath:dbPath];
         [fileManager removeItemAtPath:@"/tmp/attachme.db" error:nil];
-        HMDatabase *dbB = HMDatabase::databaseWithPath("/tmp/attachme.db");
+        HMDatabase *dbB = new HMDatabase("/tmp/attachme.db");
         FMDBQuickCheck(dbB->open());
         FMDBQuickCheck(dbB->executeUpdate("create table attached (a text)"));
         FMDBQuickCheck((dbB->executeUpdate("insert into attached values (?)", @"test")));

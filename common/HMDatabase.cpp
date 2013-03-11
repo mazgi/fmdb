@@ -8,39 +8,62 @@
 
 #include "HMDatabase.h"
 
-HMDatabase *HMDatabase::databaseWithPath(const char *path)
+#pragma mark - initialize/constract
+
+HMDatabase::HMDatabase(const char *path)
+:path_(path)
 {
-#warning Not implemented.
-    return new HMDatabase();
-    return NULL;
+    HMLog("init(%p)", this);
+    db_ = NULL;
 }
 
-bool HMDatabase::isSQLiteThreadSafe()
+HMDatabase::~HMDatabase()
 {
-    return sqlite3_threadsafe() != 0;
-}
-
-int HMDatabase::lastErrorCode()
-{
-    return sqlite3_errcode(db_);
-}
-
-const char *HMDatabase::lastErrorMessage()
-{
-    return sqlite3_errmsg(db_);
-}
-
-bool HMDatabase::hadError()
-{
-    int lastErrCode = this->lastErrorCode();
-    return (lastErrCode > SQLITE_OK && lastErrCode < SQLITE_ROW);
+    HMLog("delete(%p)", this);
 }
 
 bool HMDatabase::open()
 {
+    HMLog("open(%p)", this);
+    if (db_) {
+        return true;
+    }
+    int result = sqlite3_open(path_.c_str(), &db_);
+    if (result != SQLITE_OK) {
+        HMLog("open falied!(%p)", this);
+        return false;
+    }
+    return true;
+}
+
+#if SQLITE_VERSION_NUMBER >= 3005000
+bool HMDatabase::open(const int flags, const char *vfs)
+{
+    HMLog("open(%p)", this);
+    if (db_) {
+        return true;
+    }
+    int result = sqlite3_open_v2(path_.c_str(), &db_, flags, vfs);
+    if (result != SQLITE_OK) {
+        HMLog("open falied!(%p)", this);
+        return false;
+    }
+    return true;
+}
+#endif
+
+bool HMDatabase::close()
+{
 #warning Not implemented.
     return false;
 }
+
+void HMDatabase::setCachedStatements(HMDictionary *value)
+{
+#warning Not implemented.
+}
+
+#pragma mark -
 
 void HMDatabase::setShouldCacheStatements(bool value)
 {
@@ -179,24 +202,6 @@ int HMDatabase::changes()
     return 0;
 }
 
-void HMDatabase::setBusyRetryTimeout(int value)
-{
-#warning Not implemented.
-    busyRetryTimeout_ = value;
-}
-
-int HMDatabase::getBusyRetryTimeout()
-{
-#warning Not implemented.
-    return busyRetryTimeout_;
-}
-
-bool HMDatabase::close()
-{
-#warning Not implemented.
-    return false;
-}
-
 bool HMDatabase::columnExistsInTableWithName(const char *columnName, const char *tableName)
 {
 #warning Not implemented.
@@ -221,9 +226,4 @@ HMDictionary *HMDatabase::cachedStatements()
 {
 #warning Not implemented.
     return NULL;
-}
-
-void HMDatabase::setCachedStatements(HMDictionary *value)
-{
-#warning Not implemented.
 }
