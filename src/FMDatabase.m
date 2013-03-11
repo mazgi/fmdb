@@ -102,6 +102,11 @@
 
 #if SQLITE_VERSION_NUMBER >= 3005000
 - (BOOL)openWithFlags:(int)flags {
+    if (_db) {
+        NSLog(@"Database is already open! (%@)", _databasePath);
+        return YES;
+    }
+
     int err = sqlite3_open_v2([self sqlitePath], &_db, flags, NULL /* Name of VFS module to use */);
     if(err != SQLITE_OK) {
         NSLog(@"error opening!: %d", err);
