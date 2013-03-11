@@ -7,6 +7,8 @@
 //
 
 #include "HMDatabase.h"
+#include "HMResultSet.h"
+#include "HMStatement.h"
 
 #pragma mark - initialize/constract
 
@@ -55,6 +57,10 @@ bool HMDatabase::open(const int flags, const char *vfs)
 bool HMDatabase::close()
 {
 #warning Not implemented.
+
+    if (!db_) {
+        return false;
+    }
     return false;
 }
 

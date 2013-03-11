@@ -11,9 +11,6 @@
 
 #include <iostream>
 
-//TODO: create classes and impl.
-typedef void HMStatement;
-
 class HMEnumerator
 {
     //TODO: STLあたりから型探してくる

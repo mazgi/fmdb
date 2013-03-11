@@ -13,12 +13,19 @@
 #define HMLog(fmt, ...)
 #endif
 
-#include <iostream>
 #include <sqlite3.h>
-#include "HMResultSet.h"
+#include <iostream>
+#include <map>
+#include <list>
 
 //TODO: create classes and impl.
 typedef void HMError; //TODO: STLあたりから型探してくる
+
+class HMResultSet;
+class HMStatement;
+class HMData;
+class HMDate;
+class HMDictionary;
 
 class HMDatabase
 {
@@ -26,6 +33,9 @@ class HMDatabase
     sqlite3 *db_;
     int busyRetryTimeout_;
     bool shouldCacheStatements_;
+    std::map<std::string, HMStatement> cachedStatements_;
+    std::list<HMResultSet> openedResultSets_;
+    std::list<void *> openedFunctions_; //TODO: lambda
 public:
 #pragma mark - initialize/constract
     HMDatabase(const char *path);

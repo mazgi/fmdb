@@ -9,7 +9,9 @@
 
 #pragma mark - include c++ headers
 #include "HMDatabase.h"
+#include "HMResultSet.h"
 #include "HMDatabaseQueue.h"
+#include "HMStatement.h"
 
 #define FMDBQuickCheck(SomeBool) { if (!(SomeBool)) { NSLog(@"Failure on line %d", __LINE__); abort(); } }
 
@@ -787,7 +789,7 @@ int main_for_cpp (int argc, const char * argv[])
         HMEnumerator *e = db->cachedStatements()->objectEnumerator();
         HMStatement *statement;
 
-        while ((statement = e->nextObject())) {
+        while ((statement = (HMStatement *)e->nextObject())) {
             NSLog(@"%@", statement);
         }
     }

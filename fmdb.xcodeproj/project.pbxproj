@@ -16,6 +16,9 @@
 		2653DCDE16E5F8E30002EF6A /* HMDatabase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2653DCDC16E5F8E30002EF6A /* HMDatabase.cpp */; };
 		2653DCDF16E5F8E30002EF6A /* HMDatabase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2653DCDC16E5F8E30002EF6A /* HMDatabase.cpp */; };
 		2653DCE016E5F8E30002EF6A /* HMDatabase.h in Headers */ = {isa = PBXBuildFile; fileRef = 2653DCDD16E5F8E30002EF6A /* HMDatabase.h */; };
+		2692632516EDDD0900A02D51 /* HMStatement.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2692632316EDDD0900A02D51 /* HMStatement.cpp */; };
+		2692632616EDDD0900A02D51 /* HMStatement.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2692632316EDDD0900A02D51 /* HMStatement.cpp */; };
+		2692632716EDDD0900A02D51 /* HMStatement.h in Headers */ = {isa = PBXBuildFile; fileRef = 2692632416EDDD0900A02D51 /* HMStatement.h */; };
 		8DD76F9C0486AA7600D96B5E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08FB779EFE84155DC02AAC07 /* Foundation.framework */; };
 		8DD76F9F0486AA7600D96B5E /* fmdb.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C6859EA3029092ED04C91782 /* fmdb.1 */; };
 		CC47A00F148581E9002CCDAB /* FMDatabaseQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = CC47A00D148581E9002CCDAB /* FMDatabaseQueue.h */; };
@@ -63,6 +66,8 @@
 		2628069E16E8A1AF004A459C /* HMDatabaseQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HMDatabaseQueue.h; path = common/HMDatabaseQueue.h; sourceTree = "<group>"; };
 		2653DCDC16E5F8E30002EF6A /* HMDatabase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HMDatabase.cpp; path = common/HMDatabase.cpp; sourceTree = "<group>"; };
 		2653DCDD16E5F8E30002EF6A /* HMDatabase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HMDatabase.h; path = common/HMDatabase.h; sourceTree = "<group>"; };
+		2692632316EDDD0900A02D51 /* HMStatement.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HMStatement.cpp; path = common/HMStatement.cpp; sourceTree = "<group>"; };
+		2692632416EDDD0900A02D51 /* HMStatement.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HMStatement.h; path = common/HMStatement.h; sourceTree = "<group>"; };
 		32A70AAB03705E1F00C91783 /* fmdb_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fmdb_Prefix.pch; sourceTree = "<group>"; };
 		8DD76FA10486AA7600D96B5E /* fmdb */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = fmdb; sourceTree = BUILT_PRODUCTS_DIR; };
 		C6859EA3029092ED04C91782 /* fmdb.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = fmdb.1; sourceTree = "<group>"; };
@@ -168,6 +173,8 @@
 				2628069816E759B3004A459C /* HMResultSet.cpp */,
 				2628069E16E8A1AF004A459C /* HMDatabaseQueue.h */,
 				2628069D16E8A1AF004A459C /* HMDatabaseQueue.cpp */,
+				2692632416EDDD0900A02D51 /* HMStatement.h */,
+				2692632316EDDD0900A02D51 /* HMStatement.cpp */,
 			);
 			name = "Source (C++)";
 			sourceTree = "<group>";
@@ -195,6 +202,7 @@
 				2653DCE016E5F8E30002EF6A /* HMDatabase.h in Headers */,
 				2628069C16E759B3004A459C /* HMResultSet.h in Headers */,
 				262806A116E8A1AF004A459C /* HMDatabaseQueue.h in Headers */,
+				2692632716EDDD0900A02D51 /* HMStatement.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,6 +286,7 @@
 				2653DCDE16E5F8E30002EF6A /* HMDatabase.cpp in Sources */,
 				2628069A16E759B3004A459C /* HMResultSet.cpp in Sources */,
 				2628069F16E8A1AF004A459C /* HMDatabaseQueue.cpp in Sources */,
+				2692632516EDDD0900A02D51 /* HMStatement.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -293,6 +302,7 @@
 				2653DCDF16E5F8E30002EF6A /* HMDatabase.cpp in Sources */,
 				2628069B16E759B3004A459C /* HMResultSet.cpp in Sources */,
 				262806A016E8A1AF004A459C /* HMDatabaseQueue.cpp in Sources */,
+				2692632616EDDD0900A02D51 /* HMStatement.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
