@@ -99,18 +99,24 @@ bool HMDatabase::close()
 
 void HMDatabase::clearCachedStatements()
 {
-    for (auto it = cachedStatements_.begin(); it != cachedStatements_.end(); it++) {
-        it->second.close();
-    }
+//    for (auto it = cachedStatements_.begin(); it != cachedStatements_.end(); it++) {
+//        it->second.close();
+//    }
+    std::for_each(cachedStatements_.begin(), cachedStatements_.end(), [](std::pair<std::string, HMStatement> p) { p.second.close(); });
     cachedStatements_.clear();
 }
 
+//FIXME: コピーになるのでまずい気がする
 void HMDatabase::closeOpenResultSets()
 {
     for (auto it = openedResultSets_.begin(); it != openedResultSets_.end(); it++) {
         it->setParentDB(nullptr);
         it->close();
     }
+    std::for_each(openedResultSets_.begin(), openedResultSets_.end(), [](HMResultSet rs) {
+        rs.setParentDB(nullptr);
+        rs.close();
+    });
     openedResultSets_.clear();
 }
 
