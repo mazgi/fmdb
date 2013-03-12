@@ -15,6 +15,14 @@
 class HMStatement
 {
     sqlite3_stmt *statement_;
+public:
+    inline void close()
+    {
+        if (statement_) {
+            sqlite3_finalize(statement_);
+            statement_ = NULL;
+        }
+    }
 };
 
 #endif /* defined(__fmdb__HMStatement__) */

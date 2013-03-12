@@ -71,9 +71,12 @@ public:
     }
 };
 
+class HMDatabase;
+
 class HMResultSet
 {
 public:
+    void setParentDB(HMDatabase *newDb);
     void close();
     bool next();
     int intForColumn(const char *columnName);

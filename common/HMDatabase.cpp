@@ -99,11 +99,19 @@ bool HMDatabase::close()
 
 void HMDatabase::clearCachedStatements()
 {
-#warning Not implemented.
+    for (auto it = cachedStatements_.begin(); it != cachedStatements_.end(); it++) {
+        it->second.close();
+    }
+    cachedStatements_.clear();
 }
+
 void HMDatabase::closeOpenResultSets()
 {
-#warning Not implemented.
+    for (auto it = openedResultSets_.begin(); it != openedResultSets_.end(); it++) {
+        it->setParentDB(nullptr);
+        it->close();
+    }
+    openedResultSets_.clear();
 }
 
 #pragma mark - status

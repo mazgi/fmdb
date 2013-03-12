@@ -7,14 +7,21 @@
 //
 
 #include "HMResultSet.h"
+#include "HMDatabase.h"
+
+void HMResultSet::setParentDB(HMDatabase *newDb)
+{
+#warning Not implemented.
+}
 
 void HMResultSet::close()
 {
-
+#warning Not implemented.
 }
 
 bool HMResultSet::next()
 {
+#warning Not implemented.
     return false;
 }
 
