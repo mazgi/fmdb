@@ -9,6 +9,7 @@
 #include "HMDatabase.h"
 #include "HMResultSet.h"
 #include "HMStatement.h"
+#include <unistd.h>
 
 #pragma mark - initialize/constract
 
@@ -56,11 +57,69 @@ bool HMDatabase::open(const int flags, const char *vfs)
 
 bool HMDatabase::close()
 {
-#warning Not implemented.
+    clearCachedStatements();
+    closeOpenResultSets();
 
+    if (!db_) {
+        return true;
+    }
+
+    int  rc = SQLITE_OK;
+    bool retry = false;
+    int numberOfRetries = 0;
+    bool triedFinalizingOpenStatements = false;
+
+    do {
+        retry   = false;
+        rc      = sqlite3_close(db_);
+        if (rc == SQLITE_BUSY || rc == SQLITE_LOCKED) {
+            retry = true;
+            usleep(20);
+
+            if (busyRetryTimeout_ && (numberOfRetries++ > busyRetryTimeout_)) {
+                HMLog("Database (%p) busy, unable to close.", db_);
+                return false;
+            }
+
+            if (!triedFinalizingOpenStatements) {
+                triedFinalizingOpenStatements = true;
+                sqlite3_stmt *pStmt = NULL;
+                while ((pStmt = sqlite3_next_stmt(db_, NULL)) != 0) {
+                    HMLog("Closing leaked statement (%p).", pStmt);
+                    sqlite3_finalize(pStmt);
+                }
+            }
+        } else if (rc != SQLITE_OK) {
+            HMLog("error closing!: %d", rc);
+        }
+    } while (retry);
+    db_ = NULL;
+    return true;
+}
+
+void HMDatabase::clearCachedStatements()
+{
+#warning Not implemented.
+}
+void HMDatabase::closeOpenResultSets()
+{
+#warning Not implemented.
+}
+
+#pragma mark - status
+
+bool HMDatabase::goodConnection()
+{
     if (!db_) {
         return false;
     }
+
+    HMResultSet *rs = executeQuery("select name from sqlite_master where type='table'");
+    if (rs) {
+        rs->close();
+        return true;
+    }
+
     return false;
 }
 
@@ -120,20 +179,29 @@ HMDate *HMDatabase::dateForQuery(void *objs, ...)
 
 bool HMDatabase::rollback()
 {
-#warning Not implemented.
-    return false;
+    bool success = executeUpdate("rollback transaction");
+    if (success) {
+        inTransaction_ = false;
+    }
+    return success;
 }
 
 bool HMDatabase::commit()
 {
-#warning Not implemented.
-    return false;
+    bool success = executeUpdate("commit transaction");
+    if (success) {
+        inTransaction_ = false;
+    }
+    return success;
 }
 
 bool HMDatabase::beginTransaction()
 {
-#warning Not implemented.
-    return false;
+    bool success = executeUpdate("begin exclusive transaction");
+    if (success) {
+        inTransaction_ = true;
+    }
+    return success;
 }
 
 HMResultSet *HMDatabase::getTableSchema(const char *tableName)

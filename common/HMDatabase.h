@@ -33,6 +33,7 @@ class HMDatabase
     sqlite3 *db_;
     int busyRetryTimeout_;
     bool shouldCacheStatements_;
+    bool inTransaction_;
     std::map<std::string, HMStatement> cachedStatements_;
     std::list<HMResultSet> openedResultSets_;
     std::list<void *> openedFunctions_; //TODO: lambda
@@ -46,7 +47,10 @@ public:
 #endif
     bool close();
     void setShouldCacheStatements(bool value);
+    void clearCachedStatements();
+    void closeOpenResultSets();
 #pragma mark - status
+    bool goodConnection();
     inline static bool isSQLiteThreadSafe()
     {
         return sqlite3_threadsafe() != 0;
@@ -74,6 +78,10 @@ public:
     inline static const char *sqliteLibVersion()
     {
         return sqlite3_libversion();
+    }
+    inline bool inTransaction()
+    {
+        return inTransaction_;
     }
 #pragma mark - query
     int intForQuery(void *objs, ...);
