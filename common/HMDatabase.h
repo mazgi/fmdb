@@ -63,7 +63,10 @@ public:
     {
         return (lastErrorCode() > SQLITE_OK && lastErrorCode() < SQLITE_ROW);
     }
-    bool hasOpenResultSets();
+    inline bool hasOpenResultSets()
+    {
+        return openedResultSets_.size() > 0;
+    }
     bool columnExistsInTableWithName(const char *columnName, const char *tableName);
     bool tableExists(const char *tableName);
     HMResultSet *getTableSchema(const char *tableName);

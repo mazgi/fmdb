@@ -136,12 +136,6 @@ bool HMDatabase::beginTransaction()
     return false;
 }
 
-bool HMDatabase::hasOpenResultSets()
-{
-#warning Not implemented.
-    return false;
-}
-
 HMResultSet *HMDatabase::getTableSchema(const char *tableName)
 {
 #warning Not implemented.

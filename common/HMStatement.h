@@ -10,10 +10,11 @@
 #define __fmdb__HMStatement__
 
 #include <iostream>
+#include <sqlite3.h>
 
 class HMStatement
 {
-
+    sqlite3_stmt *statement_;
 };
 
 #endif /* defined(__fmdb__HMStatement__) */
